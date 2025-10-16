@@ -7,7 +7,7 @@ local function serialize_tags(tags)
     end
     local tagsv = {}
     for k, v in pairs(tags) do
-        table.insert(tagsv, string.format("%s=%s", k, tostring(v)))
+        table.insert(tagsv, string.format("%s=%q", k, tostring(v)))
     end
     table.sort(tagsv)
     return table.concat(tagsv, ',')
@@ -36,7 +36,7 @@ function metric:serialize(lines,name)
     if self._key ~= '' then
         enc_tags = '{' .. self._key .. '}'
     end
-    table.insert(lines, string.format("%s%s %s", name, enc_tags, tostring(self._value)))
+    table.insert(lines, string.format("%s%s %s", name, enc_tags, tostring(self:get_value())))
 end
 
 ---@class prometheus.collector
@@ -62,6 +62,11 @@ function collector:get_metric(tags)
         table.insert(self._values, m)
     end
     return m
+end
+
+function collector:set_metric(key, m)
+    self._metrics[key] = m
+    table.insert(self._values, m)
 end
 
 ---@param lines string[]
@@ -136,6 +141,22 @@ function metrics:add_gauge(name, help)
     local g = gauge.new(name, help)
     self:add_collector(g)
     return g
+end
+
+local function_value = class(metric, 'prometheus.function_value')
+function function_value:_init( func)
+    function_value.baseclass._init(self, '', 0)
+    self._func = func
+end
+
+function function_value:get_value()
+    return self._func()
+end
+
+function metrics:add_gauge_function(name, help, func)
+    local g = gauge.new(name, help)
+    g:set_metric('', function_value.new(func))
+    self:add_collector(g)
 end
 
 return metrics

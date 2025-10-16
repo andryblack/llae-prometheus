@@ -36,6 +36,10 @@ async.run(function()
         end
     end)
 
+    m:add_gauge_function('test_gauge_function', 'Test gauge function', function()
+        return math.random(1, 100)
+    end)
+
     serv:add_metrics(m)
     log.info(string.format('Server started on http://%s:%d%s', serv:get_host(), serv:get_port(), serv:get_path()))
 
